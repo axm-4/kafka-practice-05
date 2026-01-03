@@ -62,7 +62,7 @@ services:
   # Конфигурация получателя "по-одному"
   single-message-consumer:
     deploy:
-      replicas: 1
+      replicas: 2
     build: .
     command:
       - "java"
@@ -75,7 +75,7 @@ services:
   # Конфигурация получателя "пачкой"
   batch-message-consumer:
     deploy:
-      replicas: 1
+      replicas: 2
     build: .
     command:
       - "java"
