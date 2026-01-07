@@ -1,3 +1,7 @@
+package org.example;
+
+import org.example.producer.impl.IntSequenceMessageProducer;
+
 import java.util.Random;
 
 public class Main {

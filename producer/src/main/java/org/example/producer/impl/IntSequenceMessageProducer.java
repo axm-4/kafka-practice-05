@@ -1,3 +1,5 @@
+package org.example.producer.impl;
+
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -31,10 +33,11 @@ public class IntSequenceMessageProducer implements AutoCloseable {
         var message = new SimpleMessage("Hello world " + counter.getAndIncrement());
         ProducerRecord<String, SimpleMessage> record = new ProducerRecord<>(targetTopicName, message);
         producer.send(record);
+        System.out.println("Отправлено сообщение: " + message);
     }
 
     @Override
-    public void close() {
+    public synchronized void close() {
         if (producer != null) {
             producer.close();
         }
