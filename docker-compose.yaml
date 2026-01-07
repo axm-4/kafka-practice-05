@@ -15,6 +15,7 @@ services:
       - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:9094
       - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka-0:9092,EXTERNAL://127.0.0.1:9094
       - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      - KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE=false
 
     volumes:
       - kafka_0_data:/bitnami/kafka
@@ -35,9 +36,37 @@ services:
       - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:9095
       - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka-1:9092,EXTERNAL://127.0.0.1:9095
       - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      - KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE=false
 
     volumes:
       - kafka_1_data:/bitnami/kafka
+
+  kafka-init:
+    image: bitnamilegacy/kafka:3.4
+    depends_on:
+      - kafka-0
+      - kafka-1
+    command: >
+      bash -c '
+      echo "Waiting for Kafka...";
+
+      until kafka-topics.sh --bootstrap-server kafka-0:9092 --list >/dev/null 2>&1; do
+        echo "Kafka not ready yet...";
+        sleep 2;
+      done;
+
+      echo "Kafka is ready. Creating topic...";
+
+      kafka-topics.sh \
+        --create \
+        --if-not-exists \
+        --topic my-topic \
+        --bootstrap-server kafka-0:9092 \
+        --partitions 3 \
+        --replication-factor 2;
+
+      echo "Topic created. Exiting."
+      '
 
   # Веб-панель
   ui:
@@ -50,6 +79,9 @@ services:
 
   # Конфигурация producer
   producer:
+    depends_on:
+      kafka-init:
+        condition: service_completed_successfully
     build: .
     container_name: producer
     command:
@@ -61,6 +93,9 @@ services:
 
   # Конфигурация получателя "по-одному"
   single-message-consumer:
+    depends_on:
+      kafka-init:
+        condition: service_completed_successfully
     deploy:
       replicas: 2
     build: .
@@ -74,6 +109,9 @@ services:
 
   # Конфигурация получателя "пачкой"
   batch-message-consumer:
+    depends_on:
+      kafka-init:
+        condition: service_completed_successfully
     deploy:
       replicas: 2
     build: .
