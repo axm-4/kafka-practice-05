@@ -11,7 +11,6 @@
     <modules>
         <module>producer</module>
         <module>single-message-consumer</module>
-        <module>batch-message-consumer</module>
         <module>common-lib</module>
     </modules>
 

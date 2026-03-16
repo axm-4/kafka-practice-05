@@ -2,6 +2,7 @@ package org.example.consumer;
 
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.common.config.SslConfigs;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.example.common.SimpleMessage;
 import org.example.common.SimpleMessageDeserializer;
@@ -29,6 +30,13 @@ public abstract class AbstractSimpleMessageConsumer implements AutoCloseable {
         }
         this.targetTopicName = topicName;
         this.serverAddress = serverAddress;
+        properties.put("security.protocol", "SSL");
+        properties.put(SslConfigs.SSL_TRUSTSTORE_LOCATION_CONFIG, "/etc/kafka/secrets/app-consumer-creds/app-consumer.truststore.jks"); // Truststore
+        properties.put(SslConfigs.SSL_TRUSTSTORE_PASSWORD_CONFIG, "123456"); // Truststore password
+        properties.put(SslConfigs.SSL_KEYSTORE_LOCATION_CONFIG, "/etc/kafka/secrets/app-consumer-creds/app-consumer.keystore.jks"); // Keystore
+        properties.put(SslConfigs.SSL_KEYSTORE_PASSWORD_CONFIG, "123456"); // Keystore password
+        properties.put(SslConfigs.SSL_KEY_PASSWORD_CONFIG, "123456"); // Key password
+        properties.put(SslConfigs.SSL_ENDPOINT_IDENTIFICATION_ALGORITHM_CONFIG, "https"); // Отключение проверки hostname
         properties.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, serverAddress); // Адрес брокера Kafka
         properties.put(ConsumerConfig.GROUP_ID_CONFIG, consumerGroup); // Уникальный идентификатор группы
         properties.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());

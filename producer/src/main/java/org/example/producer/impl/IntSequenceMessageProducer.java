@@ -3,6 +3,7 @@ package org.example.producer.impl;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.config.SslConfigs;
 import org.apache.kafka.common.serialization.ByteBufferSerializer;
 import org.example.common.SimpleMessage;
 import org.example.common.SimpleMessageSerializer;
@@ -21,6 +22,13 @@ public class IntSequenceMessageProducer implements AutoCloseable {
             throw new IllegalArgumentException();
         }
         var properties = new Properties();
+        properties.put("security.protocol", "SSL");
+        properties.put(SslConfigs.SSL_TRUSTSTORE_LOCATION_CONFIG, "/etc/kafka/secrets/app-producer-creds/app-producer.truststore.jks"); // Truststore
+        properties.put(SslConfigs.SSL_TRUSTSTORE_PASSWORD_CONFIG, "123456"); // Truststore password
+        properties.put(SslConfigs.SSL_KEYSTORE_LOCATION_CONFIG, "/etc/kafka/secrets/app-producer-creds/app-producer.keystore.jks"); // Keystore
+        properties.put(SslConfigs.SSL_KEYSTORE_PASSWORD_CONFIG, "123456"); // Keystore password
+        properties.put(SslConfigs.SSL_KEY_PASSWORD_CONFIG, "123456"); // Key password
+        properties.put(SslConfigs.SSL_ENDPOINT_IDENTIFICATION_ALGORITHM_CONFIG, ""); // Отключение проверки hostname
         properties.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, serverAddress);
         properties.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, ByteBufferSerializer.class.getName());
         properties.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, SimpleMessageSerializer.class.getName());

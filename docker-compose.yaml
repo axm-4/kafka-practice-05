@@ -1,129 +1,212 @@
+version: '3.8'
+
 services:
-  # Первый инстанс брокера
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.4.4
+    container_name: zookeeper
+    ports:
+      - "2181:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    networks:
+      - confluent
+
   kafka-0:
-    image: bitnamilegacy/kafka:3.4
+    image: confluentinc/cp-kafka:7.4.4
+    container_name: kafka-0
+    depends_on:
+      - zookeeper
     ports:
-      - "9094:9094"
-    environment:
-      - KAFKA_ENABLE_KRAFT=yes
-      - KAFKA_CFG_PROCESS_ROLES=broker,controller
-      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
-      - ALLOW_PLAINTEXT_LISTENER=yes
-      - KAFKA_CFG_NODE_ID=0
-      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=0@kafka-0:9093,1@kafka-1:9093
-      - KAFKA_KRAFT_CLUSTER_ID=abcdefghijklmnopqrstuv
-      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:9094
-      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka-0:9092,EXTERNAL://127.0.0.1:9094
-      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT,PLAINTEXT:PLAINTEXT
-      - KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE=false
-
+      - "19093:19093"
+    networks:
+      - confluent
     volumes:
-      - kafka_0_data:/bitnami/kafka
+      - data-kafka-0:/var/lib/kafka/data
+      - ./tls/kafka-0-creds:/etc/kafka/secrets
+    environment:
+      KAFKA_BROKER_ID: 0
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:SSL,EXTERNAL:SSL
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_LISTENERS: INTERNAL://0.0.0.0:9092,EXTERNAL://0.0.0.0:19093
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka-0:9092,EXTERNAL://localhost:19093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
 
-  # Второй инстанс брокера
+      # SSL
+      KAFKA_SSL_KEYSTORE_LOCATION: /etc/kafka/secrets/kafka-0.keystore.jks
+      KAFKA_SSL_KEYSTORE_PASSWORD: "123456"
+      KAFKA_SSL_KEY_PASSWORD: "123456"
+      KAFKA_SSL_TRUSTSTORE_LOCATION: /etc/kafka/secrets/kafka.kafka-0.truststore.jks
+      KAFKA_SSL_TRUSTSTORE_PASSWORD: "123456"
+      KAFKA_SSL_ENDPOINT_IDENTIFICATION_ALGORITHM: "https"
+      KAFKA_SSL_CLIENT_AUTH: required
+      KAFKA_LISTENER_SECURITY_PROTOCOL: SSL
+      #Авторизация
+      KAFKA_ALLOW_EVERYONE_IF_NO_ACL_FOUND: "false"
+      KAFKA_AUTHORIZER_CLASS_NAME: kafka.security.authorizer.AclAuthorizer
+      KAFKA_SUPER_USERS: >
+        User:CN=kafka-0,L=Moscow,OU=AlexUnit,O=Alex,C=RU;
+        User:CN=kafka-1,L=Moscow,OU=AlexUnit,O=Alex,C=RU;
+        User:CN=kafka-2,L=Moscow,OU=AlexUnit,O=Alex,C=RU;
+
+
   kafka-1:
-    image: bitnamilegacy/kafka:3.4
+    image: confluentinc/cp-kafka:7.4.4
+    container_name: kafka-1
+    depends_on:
+      - zookeeper
     ports:
-      - "9095:9095"
-    environment:
-      - KAFKA_ENABLE_KRAFT=yes
-      - ALLOW_PLAINTEXT_LISTENER=yes
-      - KAFKA_CFG_NODE_ID=1
-      - KAFKA_CFG_PROCESS_ROLES=broker,controller
-      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
-      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=0@kafka-0:9093,1@kafka-1:9093
-      - KAFKA_KRAFT_CLUSTER_ID=abcdefghijklmnopqrstuv
-      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:9095
-      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka-1:9092,EXTERNAL://127.0.0.1:9095
-      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT,PLAINTEXT:PLAINTEXT
-      - KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE=false
-
+      - "29093:29093"
+    networks:
+      - confluent
     volumes:
-      - kafka_1_data:/bitnami/kafka
+      - data-kafka-1:/var/lib/kafka/data
+      - ./tls/kafka-1-creds:/etc/kafka/secrets
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:SSL,EXTERNAL:SSL
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_LISTENERS: INTERNAL://0.0.0.0:9092,EXTERNAL://0.0.0.0:29093
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka-1:9092,EXTERNAL://localhost:29093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
+      # SSL
+      KAFKA_SSL_KEYSTORE_LOCATION: /etc/kafka/secrets/kafka-1.keystore.jks
+      KAFKA_SSL_KEYSTORE_PASSWORD: "123456"
+      KAFKA_SSL_KEY_PASSWORD: "123456"
+      KAFKA_SSL_TRUSTSTORE_LOCATION: /etc/kafka/secrets/kafka.kafka-1.truststore.jks
+      KAFKA_SSL_TRUSTSTORE_PASSWORD: "123456"
+      KAFKA_SSL_ENDPOINT_IDENTIFICATION_ALGORITHM: "https"
+      KAFKA_SSL_CLIENT_AUTH: required
+      KAFKA_LISTENER_SECURITY_PROTOCOL: SSL
+      #Авторизация
+      KAFKA_ALLOW_EVERYONE_IF_NO_ACL_FOUND: "false"
+      KAFKA_AUTHORIZER_CLASS_NAME: kafka.security.authorizer.AclAuthorizer
+      KAFKA_SUPER_USERS: >
+        User:CN=kafka-0,L=Moscow,OU=AlexUnit,O=Alex,C=RU;
+        User:CN=kafka-1,L=Moscow,OU=AlexUnit,O=Alex,C=RU;
+        User:CN=kafka-2,L=Moscow,OU=AlexUnit,O=Alex,C=RU;
 
-  kafka-init:
-    image: bitnamilegacy/kafka:3.4
+  kafka-2:
+    image: confluentinc/cp-kafka:7.4.4
+    container_name: kafka-2
+    depends_on:
+      - zookeeper
+    ports:
+      - "39093:39093"
+    networks:
+      - confluent
+    volumes:
+      - data-kafka-2:/var/lib/kafka/data
+      - ./tls/kafka-2-creds:/etc/kafka/secrets
+    environment:
+      KAFKA_BROKER_ID: 2
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:SSL,EXTERNAL:SSL
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_LISTENERS: INTERNAL://0.0.0.0:9092,EXTERNAL://0.0.0.0:39093
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka-2:9092,EXTERNAL://localhost:39093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
+      # SSL
+      KAFKA_SSL_KEYSTORE_LOCATION: /etc/kafka/secrets/kafka-2.keystore.jks
+      KAFKA_SSL_KEYSTORE_PASSWORD: "123456"
+      KAFKA_SSL_KEY_PASSWORD: "123456"
+      KAFKA_SSL_TRUSTSTORE_LOCATION: /etc/kafka/secrets/kafka.kafka-2.truststore.jks
+      KAFKA_SSL_TRUSTSTORE_PASSWORD: "123456"
+      KAFKA_SSL_ENDPOINT_IDENTIFICATION_ALGORITHM: "https"
+      KAFKA_SSL_CLIENT_AUTH: required
+      KAFKA_LISTENER_SECURITY_PROTOCOL: SSL
+      #Авторизация
+      KAFKA_ALLOW_EVERYONE_IF_NO_ACL_FOUND: "false"
+      KAFKA_AUTHORIZER_CLASS_NAME: kafka.security.authorizer.AclAuthorizer
+      KAFKA_SUPER_USERS: >
+        User:CN=kafka-0,L=Moscow,OU=AlexUnit,O=Alex,C=RU;
+        User:CN=kafka-1,L=Moscow,OU=AlexUnit,O=Alex,C=RU;
+        User:CN=kafka-2,L=Moscow,OU=AlexUnit,O=Alex,C=RU;
+        
+  # Конфигурация producer который пишет в topic-1
+  app-producer-1:
+    networks:
+      - confluent
+    volumes:
+      - ./tls/app-producer-creds/:/etc/kafka/secrets/app-producer-creds/
     depends_on:
       - kafka-0
       - kafka-1
-    command: >
-      bash -c '
-      echo "Waiting for Kafka...";
-
-      until kafka-topics.sh --bootstrap-server kafka-0:9092 --list >/dev/null 2>&1; do
-        echo "Kafka not ready yet...";
-        sleep 2;
-      done;
-
-      echo "Kafka is ready. Creating topic...";
-
-      kafka-topics.sh \
-        --create \
-        --if-not-exists \
-        --topic my-topic \
-        --bootstrap-server kafka-0:9092 \
-        --partitions 3 \
-        --replication-factor 2;
-
-      echo "Topic created. Exiting."
-      '
-
-  # Веб-панель
-  ui:
-    image: provectuslabs/kafka-ui:v0.7.0
-    ports:
-      - "8080:8080"
-    environment:
-      - KAFKA_CLUSTERS_0_BOOTSTRAP_SERVERS=kafka-0:9092
-      - KAFKA_CLUSTERS_0_NAME=kraft
-
-  # Конфигурация producer
-  producer:
-    depends_on:
-      kafka-init:
-        condition: service_completed_successfully
+      - kafka-2
     build: .
-    container_name: producer
+    container_name: app-producer-1
     command:
       - "java"
       - "-jar"
       - "/app/producer.jar"
       - "kafka-0:9092" # адрес брокера
-      - "my-topic"  # название топика
+      - "topic-1"  # название топика
 
-  # Конфигурация получателя "по-одному"
-  single-message-consumer:
+  # Конфигурация producer который пишет в topic-2
+  app-producer-2:
+    networks:
+      - confluent
+    volumes:
+      - ./tls/app-producer-creds/:/etc/kafka/secrets/app-producer-creds/
     depends_on:
-      kafka-init:
-        condition: service_completed_successfully
-    deploy:
-      replicas: 2
+      - kafka-0
+      - kafka-1
+      - kafka-2
     build: .
+    container_name: app-producer-2
+    command:
+      - "java"
+      - "-jar"
+      - "/app/producer.jar"
+      - "kafka-0:9092" # адрес брокера
+      - "topic-2"  # название топика
+
+  # Конфигурация получателя из topic-1
+  app-consumer-1:
+    depends_on:
+      - kafka-0
+      - kafka-1
+      - kafka-2
+    networks:
+      - confluent
+    volumes:
+      - ./tls/app-consumer-creds/:/etc/kafka/secrets/app-consumer-creds/
+    build: .
+    container_name: app-consumer-1
     command:
       - "java"
       - "-jar"
       - "/app/single-message-consumer.jar"
       - "kafka-0:9092" # адрес брокера
       - "group1"  # название consumer group
-      - "my-topic"  # название топика
+      - "topic-1"  # название топика
 
-  # Конфигурация получателя "пачкой"
-  batch-message-consumer:
+  # Конфигурация получателя из topic-2
+  app-consumer-2:
     depends_on:
-      kafka-init:
-        condition: service_completed_successfully
-    deploy:
-      replicas: 2
+      - kafka-0
+      - kafka-1
+      - kafka-2
+    networks:
+      - confluent
+    volumes:
+      - ./tls/app-consumer-creds/:/etc/kafka/secrets/app-consumer-creds/
     build: .
+    container_name: app-consumer-2
     command:
       - "java"
       - "-jar"
-      - "/app/batch-message-consumer.jar"
+      - "/app/single-message-consumer.jar"
       - "kafka-0:9092" # адрес брокера
-      - "group2" # название consumer group
-      - "my-topic" # название топика
-      - "800" # минимальное количество байт для считывания (подобрано опытным путём для считывания пачки по 10)
+      - "group1"  # название consumer group
+      - "topic-2"  # название топика
 
 volumes:
-  kafka_0_data:
-  kafka_1_data:
+  data-kafka-0:
+  data-kafka-1:
+  data-kafka-2:
+
+networks:
+  confluent:
