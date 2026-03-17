@@ -9,6 +9,7 @@ import org.example.common.SimpleMessage;
 import org.example.common.SimpleMessageSerializer;
 
 import java.util.Properties;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class IntSequenceMessageProducer implements AutoCloseable {
@@ -37,10 +38,10 @@ public class IntSequenceMessageProducer implements AutoCloseable {
         this.producer = new KafkaProducer<>(properties);
     }
 
-    public void emitNextMessage() {
+    public void emitNextMessage() throws ExecutionException, InterruptedException {
         var message = new SimpleMessage("Hello world " + counter.getAndIncrement());
         ProducerRecord<String, SimpleMessage> record = new ProducerRecord<>(targetTopicName, message);
-        producer.send(record);
+        producer.send(record).get();
         System.out.println("Отправлено сообщение: " + message);
     }
 

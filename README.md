@@ -47,9 +47,10 @@ Created topic topic-2.
 ```shell
 docker exec kafka-0 kafka-acls --bootstrap-server kafka-0:9092 \
   --command-config /etc/kafka/secrets/adminclient-configs.conf \
-  --add --allow-principal User:app-producer --operation Write --topic topic-1
+  --add --allow-principal "User:app-producer" --operation Write --topic topic-1
 ```
-Вывод
+
+Вывод:
 ```shell
 Adding ACLs for resource `ResourcePattern(resourceType=TOPIC, name=topic-1, patternType=LITERAL)`: 
         (principal=User:app-producer, host=*, operation=WRITE, permissionType=ALLOW) 
@@ -58,13 +59,28 @@ Current ACLs for resource `ResourcePattern(resourceType=TOPIC, name=topic-1, pat
         (principal=User:app-producer, host=*, operation=WRITE, permissionType=ALLOW) 
 ```
 
+```shell
+docker exec kafka-0 kafka-acls --bootstrap-server kafka-0:9092 \
+  --command-config /etc/kafka/secrets/adminclient-configs.conf \
+  --add --allow-principal "User:app-producer" --operation Describe --topic topic-1
+```
+Вывод
+```shell
+Adding ACLs for resource `ResourcePattern(resourceType=TOPIC, name=topic-1, patternType=LITERAL)`: 
+        (principal=User:app-producer, host=*, operation=DESCRIBE, permissionType=ALLOW) 
+
+Current ACLs for resource `ResourcePattern(resourceType=TOPIC, name=topic-1, patternType=LITERAL)`: 
+        (principal=User:app-producer, host=*, operation=WRITE, permissionType=ALLOW)
+        (principal=User:app-producer, host=*, operation=DESCRIBE, permissionType=ALLOW)  
+```
+
 Разрешаем `app-producer` писать в `topic-2`:
 ```shell
 docker exec kafka-0 kafka-acls --bootstrap-server kafka-0:9092 \
   --command-config /etc/kafka/secrets/adminclient-configs.conf \
-  --add --allow-principal User:app-producer --operation Write --topic topic-2
+  --add --allow-principal "User:app-producer" --operation Write --topic topic-2
 ```
-Вывод
+Вывод:
 ```shell
 Adding ACLs for resource `ResourcePattern(resourceType=TOPIC, name=topic-2, patternType=LITERAL)`: 
         (principal=User:app-producer, host=*, operation=WRITE, permissionType=ALLOW) 
@@ -73,12 +89,26 @@ Current ACLs for resource `ResourcePattern(resourceType=TOPIC, name=topic-2, pat
         (principal=User:app-producer, host=*, operation=WRITE, permissionType=ALLOW) 
 ```
 
-Разрешаем `app-consumer` читать из `topic-1`:
-
 ```shell
 docker exec kafka-0 kafka-acls --bootstrap-server kafka-0:9092 \
   --command-config /etc/kafka/secrets/adminclient-configs.conf \
-  --add --allow-principal User:app-consumer --operation Read --topic topic-1 --group group1
+  --add --allow-principal "User:app-producer" --operation Describe --topic topic-2
+```
+Вывод
+```shell
+Adding ACLs for resource `ResourcePattern(resourceType=TOPIC, name=topic-2, patternType=LITERAL)`: 
+        (principal=User:app-producer, host=*, operation=DESCRIBE, permissionType=ALLOW) 
+
+Current ACLs for resource `ResourcePattern(resourceType=TOPIC, name=topic-2, patternType=LITERAL)`: 
+        (principal=User:app-producer, host=*, operation=WRITE, permissionType=ALLOW)
+        (principal=User:app-producer, host=*, operation=DESCRIBE, permissionType=ALLOW) 
+```
+
+Разрешаем `app-consumer` читать из `topic-1`:
+```shell
+docker exec kafka-0 kafka-acls --bootstrap-server kafka-0:9092 \
+  --command-config /etc/kafka/secrets/adminclient-configs.conf \
+  --add --allow-principal "User:app-consumer" --operation Read --topic topic-1
 ```
 Вывод
 ```shell
@@ -87,6 +117,7 @@ Adding ACLs for resource `ResourcePattern(resourceType=TOPIC, name=topic-1, patt
 
 Current ACLs for resource `ResourcePattern(resourceType=TOPIC, name=topic-1, patternType=LITERAL)`: 
         (principal=User:app-producer, host=*, operation=WRITE, permissionType=ALLOW)
+        (principal=User:app-producer, host=*, operation=DESCRIBE, permissionType=ALLOW)
         (principal=User:app-consumer, host=*, operation=READ, permissionType=ALLOW) 
 ```
 
@@ -95,21 +126,25 @@ Current ACLs for resource `ResourcePattern(resourceType=TOPIC, name=topic-1, pat
 ```shell
 docker exec kafka-0 kafka-acls --bootstrap-server kafka-0:9092 \
   --command-config /etc/kafka/secrets/adminclient-configs.conf \
-  --add --allow-principal User:app-consumer --operation Read --group group1
-  
-docker exec kafka-0 kafka-acls --bootstrap-server kafka-0:9092 \
-  --command-config /etc/kafka/secrets/adminclient-configs.conf \
-  --add --allow-principal User:app-consumer --operation Describe --group group1
+  --add --allow-principal "User:app-consumer" --operation Read --group group1
 ```
-
-Вывод:
+Вывод
 ```shell
 Adding ACLs for resource `ResourcePattern(resourceType=GROUP, name=group1, patternType=LITERAL)`: 
         (principal=User:app-consumer, host=*, operation=READ, permissionType=ALLOW) 
 
 Current ACLs for resource `ResourcePattern(resourceType=GROUP, name=group1, patternType=LITERAL)`: 
         (principal=User:app-consumer, host=*, operation=READ, permissionType=ALLOW) 
-        
+```
+
+```shell
+docker exec kafka-0 kafka-acls --bootstrap-server kafka-0:9092 \
+  --command-config /etc/kafka/secrets/adminclient-configs.conf \
+  --add --allow-principal "User:app-consumer" --operation Describe --group group1
+```
+
+Вывод:
+```shell
 Adding ACLs for resource `ResourcePattern(resourceType=GROUP, name=group1, patternType=LITERAL)`: 
         (principal=User:app-consumer, host=*, operation=DESCRIBE, permissionType=ALLOW) 
 
@@ -127,24 +162,55 @@ docker compose up app-producer-1 app-producer-2
 
 Видим вывод:
 ```shell
-app-producer-2  | Пишем в kafka-0:9092 -> topic-2
+Attaching to app-producer-1, app-producer-2
 app-producer-1  | Пишем в kafka-0:9092 -> topic-1
+app-producer-2  | Пишем в kafka-0:9092 -> topic-2
 app-producer-1  | SLF4J: Failed to load class "org.slf4j.impl.StaticLoggerBinder".
 app-producer-1  | SLF4J: Defaulting to no-operation (NOP) logger implementation
 app-producer-1  | SLF4J: See http://www.slf4j.org/codes.html#StaticLoggerBinder for further details.
 app-producer-2  | SLF4J: Failed to load class "org.slf4j.impl.StaticLoggerBinder".
 app-producer-2  | SLF4J: Defaulting to no-operation (NOP) logger implementation
 app-producer-2  | SLF4J: See http://www.slf4j.org/codes.html#StaticLoggerBinder for further details.
+app-producer-2  | Сериализовано сообщение размером 17 байт
+app-producer-1  | Сериализовано сообщение размером 17 байт
 app-producer-1  | Отправлено сообщение: SimpleMessage{text='Hello world 1'}
 app-producer-2  | Отправлено сообщение: SimpleMessage{text='Hello world 1'}
-app-producer-2  | Отправлено сообщение: SimpleMessage{text='Hello world 2'}
+app-producer-1  | Сериализовано сообщение размером 17 байт
 app-producer-1  | Отправлено сообщение: SimpleMessage{text='Hello world 2'}
+app-producer-2  | Сериализовано сообщение размером 17 байт
+app-producer-2  | Отправлено сообщение: SimpleMessage{text='Hello world 2'}
+app-producer-1  | Сериализовано сообщение размером 17 байт
 app-producer-1  | Отправлено сообщение: SimpleMessage{text='Hello world 3'}
-app-producer-2  | Отправлено сообщение: SimpleMessage{text='Hello world 3'}
-app-producer-1  | Отправлено сообщение: SimpleMessage{text='Hello world 4'}
 ```
 
-Пробуем запустить `app-consumer`, который будет читать `topic-1`:
+Пробуем запустить `app-consumer-1`, который будет читать `topic-1`:
 ```shell
 docker compose up app-consumer-1
+```
+
+Получаем вывод:
+```shell
+Attaching to app-consumer-1
+app-consumer-1  | Читаем из kafka-0:9092
+app-consumer-1  | SLF4J: Failed to load class "org.slf4j.impl.StaticLoggerBinder".
+app-consumer-1  | SLF4J: Defaulting to no-operation (NOP) logger implementation
+app-consumer-1  | SLF4J: See http://www.slf4j.org/codes.html#StaticLoggerBinder for further details.
+app-consumer-1  | Получено 20 сообщений
+app-consumer-1  | Получено сообщение: key = null, value = SimpleMessage{text='Hello world 1'}, partition = 1, offset = 0
+app-consumer-1  | Получено сообщение: key = null, value = SimpleMessage{text='Hello world 2'}, partition = 1, offset = 1
+```
+
+Пробуем запустить `app-consumer-2`, который будет читать `topic-2`:
+```shell
+docker compose up app-consumer-2
+```
+
+Получаем ожидаемый вывод:
+```shell
+Attaching to app-consumer-2
+app-consumer-2  | Читаем из kafka-0:9092
+app-consumer-2  | SLF4J: Failed to load class "org.slf4j.impl.StaticLoggerBinder".
+app-consumer-2  | SLF4J: Defaulting to no-operation (NOP) logger implementation
+app-consumer-2  | SLF4J: See http://www.slf4j.org/codes.html#StaticLoggerBinder for further details.
+app-consumer-2  | Не удалось получить сообщения из Kafka: org.apache.kafka.common.errors.TopicAuthorizationException: Not authorized to access topics: [topic-2]
 ```

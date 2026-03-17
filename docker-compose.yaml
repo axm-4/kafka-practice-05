@@ -44,11 +44,12 @@ services:
       KAFKA_LISTENER_SECURITY_PROTOCOL: SSL
       #Авторизация
       KAFKA_ALLOW_EVERYONE_IF_NO_ACL_FOUND: "false"
+      KAFKA_SSL_PRINCIPAL_MAPPING_RULES: "RULE:^CN=([^,]*).*$/$1/,DEFAULT"
       KAFKA_AUTHORIZER_CLASS_NAME: kafka.security.authorizer.AclAuthorizer
       KAFKA_SUPER_USERS: >
-        User:CN=kafka-0,L=Moscow,OU=AlexUnit,O=Alex,C=RU;
-        User:CN=kafka-1,L=Moscow,OU=AlexUnit,O=Alex,C=RU;
-        User:CN=kafka-2,L=Moscow,OU=AlexUnit,O=Alex,C=RU;
+        User:kafka-0;
+        User:kafka-1;
+        User:kafka-2;
 
 
   kafka-1:
@@ -82,11 +83,12 @@ services:
       KAFKA_LISTENER_SECURITY_PROTOCOL: SSL
       #Авторизация
       KAFKA_ALLOW_EVERYONE_IF_NO_ACL_FOUND: "false"
+      KAFKA_SSL_PRINCIPAL_MAPPING_RULES: "RULE:^CN=([^,]*).*$/$1/,DEFAULT"
       KAFKA_AUTHORIZER_CLASS_NAME: kafka.security.authorizer.AclAuthorizer
       KAFKA_SUPER_USERS: >
-        User:CN=kafka-0,L=Moscow,OU=AlexUnit,O=Alex,C=RU;
-        User:CN=kafka-1,L=Moscow,OU=AlexUnit,O=Alex,C=RU;
-        User:CN=kafka-2,L=Moscow,OU=AlexUnit,O=Alex,C=RU;
+        User:kafka-0;
+        User:kafka-1;
+        User:kafka-2;
 
   kafka-2:
     image: confluentinc/cp-kafka:7.4.4
@@ -119,11 +121,12 @@ services:
       KAFKA_LISTENER_SECURITY_PROTOCOL: SSL
       #Авторизация
       KAFKA_ALLOW_EVERYONE_IF_NO_ACL_FOUND: "false"
+      KAFKA_SSL_PRINCIPAL_MAPPING_RULES: "RULE:^CN=([^,]*).*$/$1/,DEFAULT"
       KAFKA_AUTHORIZER_CLASS_NAME: kafka.security.authorizer.AclAuthorizer
       KAFKA_SUPER_USERS: >
-        User:CN=kafka-0,L=Moscow,OU=AlexUnit,O=Alex,C=RU;
-        User:CN=kafka-1,L=Moscow,OU=AlexUnit,O=Alex,C=RU;
-        User:CN=kafka-2,L=Moscow,OU=AlexUnit,O=Alex,C=RU;
+        User:kafka-0;
+        User:kafka-1;
+        User:kafka-2;
         
   # Конфигурация producer который пишет в topic-1
   app-producer-1:
@@ -202,6 +205,34 @@ services:
       - "kafka-0:9092" # адрес брокера
       - "group1"  # название consumer group
       - "topic-2"  # название топика
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:v0.7.0
+    container_name: kafka-ui
+    hostname: kafka-ui
+    restart: always
+    ports:
+      - "127.0.0.1:8084:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: "SSL Cluster"
+      KAFKA_CLUSTERS_0_BOOTSTRAP_SERVERS: "kafka-0:9092,kafka-1:9092,kafka-2:9092"
+
+      # SSL настройки
+      KAFKA_CLUSTERS_0_PROPERTIES_SECURITY_PROTOCOL: "SSL"
+      KAFKA_CLUSTERS_0_PROPERTIES_SSL_TRUSTSTORE_LOCATION: "/etc/kafka/secrets/kafka.kafka-0.truststore.jks"
+      KAFKA_CLUSTERS_0_PROPERTIES_SSL_TRUSTSTORE_PASSWORD: "123456"
+      KAFKA_CLUSTERS_0_PROPERTIES_SSL_KEYSTORE_LOCATION: "/etc/kafka/secrets/kafka-0.keystore.jks"
+      KAFKA_CLUSTERS_0_PROPERTIES_SSL_KEYSTORE_PASSWORD: "123456"
+      KAFKA_CLUSTERS_0_PROPERTIES_SSL_KEY_PASSWORD: "123456"
+      KAFKA_CLUSTERS_0_PROPERTIES_SSL_ENDPOINT_IDENTIFICATION_ALGORITHM: ""
+
+      # Оптимизация логов
+      LOGGING_LEVEL_ROOT: "INFO"
+      LOGGING_LEVEL_ORG_APACHE_KAFKA: "WARN"
+    volumes:
+      - ./tls/kafka-0-creds:/etc/kafka/secrets
+    networks:
+      - confluent
 
 volumes:
   data-kafka-0:

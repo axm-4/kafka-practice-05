@@ -3,6 +3,7 @@ package org.example;
 import org.example.producer.impl.IntSequenceMessageProducer;
 
 import java.util.Random;
+import java.util.concurrent.ExecutionException;
 
 public class Main {
     private static final Random RANDOM = new Random();
@@ -22,7 +23,7 @@ public class Main {
                 producer.emitNextMessage();
                 Thread.sleep(RANDOM.nextInt(500, 5000));
             }
-        } catch (InterruptedException e) {
+        } catch (InterruptedException | ExecutionException e) {
             throw new RuntimeException(e);
         }
     }
